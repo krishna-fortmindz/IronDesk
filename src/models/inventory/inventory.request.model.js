@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+import mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid";
 
 const inventoryRequestSchema = new mongoose.Schema({
   _id: {
@@ -7,8 +7,13 @@ const inventoryRequestSchema = new mongoose.Schema({
     default: uuidv4
   },
   itemId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'InventoryItem',
+    required: true
+  },
+  employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
     required: true
   },
   requestedQty: {
@@ -19,13 +24,19 @@ const inventoryRequestSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['ASSIGN', 'RETURN', 'ADJUSTMENT'],
+    default: 'ASSIGN',
+    required: true
+  },
   status: {
     type: String,
     enum: ['PENDING', 'APPROVED', 'REJECTED'],
-    default: 'PENDING'
+    default: 'APPROVED' // Auto-approved for now as logic handles stock
   }
 }, {
   timestamps: { createdAt: true, updatedAt: false }
 });
 
-module.exports = mongoose.model('InventoryRequest', inventoryRequestSchema);
+export default mongoose.model('InventoryRequest', inventoryRequestSchema);
