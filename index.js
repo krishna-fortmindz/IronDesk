@@ -48,6 +48,9 @@ app.use("/api/v1/inventory", inventoryRouter);
 app.use("/api/v1/leaves", leaveRouter);
 app.use("/api/v1/salaries", salaryRouter);
 app.use("/api/v1/attendance", attendanceRouter);
+
+import companyRouter from "./src/routes/company.routes.js";
+app.use("/api/v1/company", companyRouter);
 app.use(errorHandler);
 
 const port = process.env.PORT || 3000;
