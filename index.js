@@ -29,6 +29,8 @@ app.use(cors({
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://192.168.1.18:8080",
+        "https://iron-desk.vercel.app",
+
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
