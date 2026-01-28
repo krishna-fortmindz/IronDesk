@@ -354,6 +354,59 @@ const updateAttendance = asyncHandler(async (req, res) => {
     );
 });
 
+const getTodayAttendance = asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+    const employee = await Employee.findOne({ employeeId: userId });
+
+    if (!employee) {
+        throw new ApiError(404, "Employee record not found");
+    }
+
+    const today = moment().format("YYYY-MM-DD");
+    const attendance = await Attendance.findOne({ employeeId: employee._id, date: today });
+
+    return res.status(200).json(
+        new ApiResponse(200, attendance || null, "Today's attendance fetched successfully")
+    );
+});
+
+const getAllTodayAttendance = asyncHandler(async (req, res) => {
+    const user = req.user;
+    let companyId;
+
+    const employee = await Employee.findOne({ employeeId: user._id });
+
+    if (employee) {
+        companyId = employee.company;
+    } else if (user.company) {
+        companyId = user.company._id || user.company;
+    } else {
+        throw new ApiError(404, "Company information not found for the requesting user");
+    }
+
+    // Find all employees in the same company
+    const companyEmployees = await Employee.find({ company: companyId }).select("_id");
+    const employeeIds = companyEmployees.map(emp => emp._id);
+
+    const today = moment().format("YYYY-MM-DD");
+    const attendanceRecords = await Attendance.find({
+        employeeId: { $in: employeeIds },
+        date: today
+    })
+        .populate({
+            path: "employeeId",
+            select: "designation department employeeId",
+            populate: {
+                path: "employeeId",
+                select: "name email avatar"
+            }
+        });
+
+    return res.status(200).json(
+        new ApiResponse(200, attendanceRecords, "Today's company attendance fetched successfully")
+    );
+});
+
 export {
     addWorkLocation,
     getWorkLocations,
@@ -364,5 +417,7 @@ export {
     getAllCompanyAttendance,
     requestAttendance,
     handleAttendanceRequest,
-    updateAttendance
+    updateAttendance,
+    getTodayAttendance,
+    getAllTodayAttendance
 };

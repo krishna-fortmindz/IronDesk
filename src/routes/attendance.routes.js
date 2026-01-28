@@ -9,7 +9,9 @@ import {
     getAllCompanyAttendance,
     requestAttendance,
     handleAttendanceRequest,
-    updateAttendance
+    updateAttendance,
+    getTodayAttendance,
+    getAllTodayAttendance
 } from "../controllers/attendance/attendance.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { roleGuard } from "../middlewares/role.middleware.js";
@@ -25,6 +27,12 @@ attendanceRouter.route("/check-in")
 
 attendanceRouter.route("/check-out")
     .post(verifyJWT, checkOut);
+
+attendanceRouter.route("/today")
+    .get(verifyJWT, getTodayAttendance);
+
+attendanceRouter.route("/today/all")
+    .get(verifyJWT, roleGuard("ADMIN", "HR"), getAllTodayAttendance);
 
 attendanceRouter.route("/my")
     .get(verifyJWT, getMyAttendance);
