@@ -17,7 +17,7 @@ import { roleGuard } from "../middlewares/role.middleware.js";
 const attendanceRouter = Router();
 
 attendanceRouter.route("/locations")
-    .post(verifyJWT, roleGuard("ADMIN", "HR"), addWorkLocation)
+    .patch(verifyJWT, roleGuard("ADMIN", "HR"), addWorkLocation)
     .get(verifyJWT, roleGuard("ADMIN", "HR"), getWorkLocations);
 
 attendanceRouter.route("/check-in")

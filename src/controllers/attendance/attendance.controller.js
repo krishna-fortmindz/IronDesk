@@ -32,16 +32,30 @@ const addWorkLocation = asyncHandler(async (req, res) => {
     }
 
     const user = req.user;
-    const employee = await Employee.findOne({ employeeId: user._id });
-    if (!employee) throw new ApiError(404, "Employee not found");
+    let companyId;
 
-    const location = await WorkLocation.create({
-        name,
-        latitude,
-        longitude,
-        radiusInMeters: radiusInMeters || 100,
-        company: employee.company
-    });
+    const employee = await Employee.findOne({ employeeId: user._id });
+
+    if (employee) {
+        companyId = employee.company;
+    } else if (user.company) {
+        companyId = user.company._id || user.company;
+    } else {
+        throw new ApiError(404, "Company information not found. You must be an employee or linked to a company.");
+    }
+
+    const location = await WorkLocation.findOneAndUpdate(
+        { name, company: companyId },
+        {
+            name,
+            latitude,
+            longitude,
+            radiusInMeters: radiusInMeters || 100,
+            company: companyId,
+            isActive: true
+        },
+        { new: true, upsert: true }
+    );
 
     return res.status(201).json(
         new ApiResponse(201, location, "Work location added successfully")
@@ -50,10 +64,19 @@ const addWorkLocation = asyncHandler(async (req, res) => {
 
 const getWorkLocations = asyncHandler(async (req, res) => {
     const user = req.user;
-    const employee = await Employee.findOne({ employeeId: user._id });
-    if (!employee) throw new ApiError(404, "Employee not found");
+    let companyId;
 
-    const locations = await WorkLocation.find({ isActive: true, company: employee.company });
+    const employee = await Employee.findOne({ employeeId: user._id });
+
+    if (employee) {
+        companyId = employee.company;
+    } else if (user.company) {
+        companyId = user.company._id || user.company;
+    } else {
+        throw new ApiError(404, "Company information not found.");
+    }
+
+    const locations = await WorkLocation.find({ isActive: true, company: companyId });
     return res.status(200).json(
         new ApiResponse(200, locations, "Work locations fetched successfully")
     );
