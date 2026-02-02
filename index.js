@@ -14,16 +14,7 @@ import attendanceRouter from "./src/routes/attendance.routes.js";
 import { errorHandler } from "./src/middlewares/error.middleware.js";
 
 const app = express();
-console.log("=== Environment Variables ===");
-console.log("ACCESS_TOKEN_SECRET exists:", !!process.env.ACCESS_TOKEN_SECRET);
-console.log("ACCESS_TOKEN_SECRET length:", process.env.ACCESS_TOKEN_SECRET?.length);
-console.log("PORT:", process.env.PORT);
-console.log("ENV CHECK");
-console.log("AWS_BUCKET_NAME:", process.env.AWS_BUCKET_NAME);
-console.log("AWS_REGION:", process.env.AWS_REGION);
-console.log("ENV FILE PATH:", process.cwd());
 
-console.log("=============================");
 app.use(cors({
     origin: "*",
     credentials: true,
@@ -32,10 +23,21 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
-
-
 app.use(morgan("dev"));
-db();
+
+// Middleware to ensure DB connection before handling any request
+app.use(async (req, res, next) => {
+    try {
+        await db();
+        next();
+    } catch (error) {
+        console.error("Database connection failed:", error);
+        res.status(500).json({
+            success: false,
+            message: "Database connection failed"
+        });
+    }
+});
 
 
 app.use("/api/v1/users", userRouter);
