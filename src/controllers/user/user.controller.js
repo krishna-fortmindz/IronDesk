@@ -214,4 +214,45 @@ const getAllUsers = asyncHandler(async (req, res) => {
 });
 
 
-export { registerUser, loginUser, refreshAccessToken, createEmployeeFromUser, getAllUsers, getUserById };
+const logoutUser = asyncHandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        { $unset: { refreshToken: 1 } },
+        { new: true }
+    );
+
+    const options = { httpOnly: true, secure: true };
+
+    return res
+        .status(200)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
+const assignUserToCompany = asyncHandler(async (req, res) => {
+    const { userId, companyId } = req.body;
+
+    if (!userId || !companyId) {
+        throw new ApiError(400, "userId and companyId are required");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId) || !mongoose.Types.ObjectId.isValid(companyId)) {
+        throw new ApiError(400, "Invalid userId or companyId");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        { company: companyId },
+        { new: true }
+    ).populate("company").select("-password -refreshToken");
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, user, "User assigned to company successfully")
+    );
+});
+
+export { registerUser, loginUser, refreshAccessToken, createEmployeeFromUser, getAllUsers, getUserById, logoutUser, assignUserToCompany };

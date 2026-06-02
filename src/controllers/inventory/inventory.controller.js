@@ -165,4 +165,29 @@ const getItemHistory = asyncHandler(async (req, res) => {
     );
 });
 
-export { createItem, getAllItems, getItemById, updateItem, assignItem, returnItem, getItemHistory };
+const getLowStockItems = asyncHandler(async (req, res) => {
+    const items = await Inventory.find({ $expr: { $lte: ["$quantity", "$minThreshold"] } });
+    return res.status(200).json(
+        new ApiResponse(200, items, "Low stock items fetched successfully")
+    );
+});
+
+const deleteItem = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new ApiError(400, "Invalid item ID");
+    }
+
+    const item = await Inventory.findByIdAndDelete(id);
+
+    if (!item) {
+        throw new ApiError(404, "Inventory item not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Inventory item deleted successfully")
+    );
+});
+
+export { createItem, getAllItems, getItemById, updateItem, assignItem, returnItem, getItemHistory, getLowStockItems, deleteItem };

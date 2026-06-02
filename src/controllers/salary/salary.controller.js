@@ -162,4 +162,76 @@ const getMyPayslip = asyncHandler(async (req, res) => {
     );
 });
 
-export { createOrUpdateSalary, getSalary, getMySalary, getMyPayslip };
+const getAllSalaries = asyncHandler(async (req, res) => {
+    const salaries = await Salary.find()
+        .populate({
+            path: "employeeId",
+            select: "designation department",
+            populate: { path: "employeeId", select: "name email" }
+        });
+
+    return res.status(200).json(
+        new ApiResponse(200, salaries, "All salary structures fetched successfully")
+    );
+});
+
+const getPayslipByEmployeeId = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    let employee = await Employee.findOne({ employeeId: id });
+    if (!employee && mongoose.Types.ObjectId.isValid(id)) {
+        employee = await Employee.findById(id);
+    }
+
+    if (!employee) {
+        throw new ApiError(404, "Employee not found");
+    }
+
+    const salary = await Salary.findOne({ employeeId: employee._id });
+    if (!salary) {
+        throw new ApiError(404, "Salary structure not found for this employee");
+    }
+
+    const date = new Date();
+    const month = req.query.month ? parseInt(req.query.month) - 1 : date.getMonth();
+    const year = req.query.year ? parseInt(req.query.year) : date.getFullYear();
+
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0);
+
+    const approvedLeaves = await LeaveApplication.find({
+        employeeId: employee._id,
+        status: "APPROVED",
+        startDate: { $lte: endOfMonth },
+        endDate: { $gte: startOfMonth }
+    });
+
+    let totalLeaveDays = 0;
+    approvedLeaves.forEach(leave => {
+        const start = leave.startDate < startOfMonth ? startOfMonth : leave.startDate;
+        const end = leave.endDate > endOfMonth ? endOfMonth : leave.endDate;
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        totalLeaveDays += days;
+    });
+
+    const payslip = {
+        employee: {
+            designation: employee.designation,
+            department: employee.department,
+            employeeId: employee._id
+        },
+        period: { month: month + 1, year },
+        salaryStructure: {
+            baseSalary: salary.baseSalary,
+            allowances: salary.allowances,
+            deductions: salary.deductions
+        },
+        attendance: { totalLeaveDays }
+    };
+
+    return res.status(200).json(
+        new ApiResponse(200, payslip, "Payslip generated successfully")
+    );
+});
+
+export { createOrUpdateSalary, getSalary, getMySalary, getMyPayslip, getAllSalaries, getPayslipByEmployeeId };

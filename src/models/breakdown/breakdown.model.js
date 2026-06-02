@@ -1,37 +1,46 @@
-const mongoose = require('mongoose');
-const { randomUUID } = require('crypto');
+import mongoose from "mongoose";
 
-const inventoryRequestSchema = new mongoose.Schema({
-    _id: {
-        type: String,
-        default: () => randomUUID()
+const breakdownSchema = new mongoose.Schema(
+    {
+        reportedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        },
+        equipmentName: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        rawDescription: {
+            type: String,
+            required: true
+        },
+        generatedSummary: {
+            type: String,
+            default: null
+        },
+        severity: {
+            type: String,
+            enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+            default: "MEDIUM"
+        },
+        status: {
+            type: String,
+            enum: ["REPORTED", "IN_PROGRESS", "RESOLVED", "CLOSED"],
+            default: "REPORTED"
+        },
+        assignedTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null
+        },
+        resolvedAt: {
+            type: Date,
+            default: null
+        }
     },
-    itemId: {
-        type: String,
-        ref: 'InventoryItem',
-        required: true
-    },
-    requestedQty: {
-        type: Number,
-        required: true
-    },
-    reason: {
-        type: String,
-        required: true
-    },
-    status: {
-        type: String,
-        enum: ['PENDING', 'APPROVED', 'REJECTED'],
-        default: 'PENDING'
-    },
-    approval: {
-        type: String,
-        ref: 'Approval'
-    }
-}, {
-    timestamps: { createdAt: 'createdAt', updatedAt: false }
-});
+    { timestamps: true }
+);
 
-const InventoryRequest = mongoose.model('InventoryRequest', inventoryRequestSchema);
-
-module.exports = InventoryRequest;
+export default mongoose.model("Breakdown", breakdownSchema);
