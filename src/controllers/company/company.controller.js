@@ -3,7 +3,50 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import Company from "../../models/company/company.model.js";
 import Employee from "../../models/employee/employee.model.js";
+import User from "../../models/users/user.model.js";
 import mongoose from "mongoose";
+
+const registerCompany = asyncHandler(async (req, res) => {
+    const { companyName, companyEmail, address, adminName, adminEmail, adminPassword } = req.body;
+
+    if (!companyName || !companyEmail || !address || !adminName || !adminEmail || !adminPassword) {
+        throw new ApiError(400, "All fields are required");
+    }
+
+    const existingCompany = await Company.findOne({ name: companyName });
+    if (existingCompany) {
+        throw new ApiError(409, "A company with this name already exists");
+    }
+
+    const existingAdmin = await User.findOne({ email: adminEmail });
+    if (existingAdmin) {
+        throw new ApiError(409, "A user with this email already exists");
+    }
+
+    const company = await Company.create({ name: companyName, email: companyEmail, address });
+
+    const admin = await User.create({
+        name: adminName,
+        email: adminEmail,
+        password: adminPassword,
+        role: "ADMIN",
+        company: company._id,
+    });
+
+    const accessToken = admin.generateAccessToken();
+    const refreshToken = admin.generateRefreshToken();
+    admin.refreshToken = refreshToken;
+    await admin.save({ validateBeforeSave: false });
+
+    const adminData = await User.findById(admin._id).select("-password -refreshToken");
+
+    const options = { httpOnly: true, secure: true };
+
+    return res
+        .status(201)
+        .cookie("refreshToken", refreshToken, options)
+        .json(new ApiResponse(201, { company, admin: adminData, accessToken, refreshToken }, "Company registered successfully"));
+});
 
 const createCompany = asyncHandler(async (req, res) => {
     const { name, address, email, phone, website, logo } = req.body;
@@ -24,7 +67,7 @@ const createCompany = asyncHandler(async (req, res) => {
     );
 });
 
-const getAllCompanies = asyncHandler(async (req, res) => {
+const getAllCompanies = asyncHandler(async (_req, res) => {
     const companies = await Company.find().sort({ createdAt: -1 });
     return res.status(200).json(
         new ApiResponse(200, companies, "Companies fetched successfully")
@@ -75,6 +118,7 @@ const updateCompany = asyncHandler(async (req, res) => {
 });
 
 export {
+    registerCompany,
     createCompany,
     getAllCompanies,
     getCompanyDetails,

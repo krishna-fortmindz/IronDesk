@@ -1,9 +1,11 @@
 import { Router } from "express";
-import { createCompany, getAllCompanies, getCompanyDetails, updateCompany } from "../controllers/company/company.controller.js";
+import { registerCompany, createCompany, getAllCompanies, getCompanyDetails, updateCompany } from "../controllers/company/company.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { roleGuard } from "../middlewares/role.middleware.js";
 
 const companyRouter = Router();
+
+companyRouter.route("/register").post(registerCompany);
 
 companyRouter.route("/")
     .post(verifyJWT, roleGuard("ADMIN"), createCompany)

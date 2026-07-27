@@ -103,7 +103,7 @@ const loginUser = asyncHandler(async (req, res) => {
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const incomingRefreshToken = req.cookies.refreshToken || req.body?.refreshToken;
 
     if (!incomingRefreshToken) {
         throw new ApiError(401, "unauthorized request");
@@ -202,7 +202,7 @@ const getUserById = asyncHandler(async (req, res) => {
         new ApiResponse(200, user, "User fetched successfully")
     );
 });
-const getAllUsers = asyncHandler(async (req, res) => {
+const getAllUsers = asyncHandler(async (_req, res) => {
     const users = await User.find({
         role: "USER",
         isActive: true
